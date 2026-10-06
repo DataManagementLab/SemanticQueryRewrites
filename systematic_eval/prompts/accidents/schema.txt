@@ -1,0 +1,3 @@
+- nesreca: id_nesreca,klas_nesreca,upravna_enota,cas_nesreca,naselje_ali_izven,kategorija_cesta,oznaka_cesta_ali_naselje,tekst_cesta_ali_naselje,oznaka_odsek_ali_ulica,tekst_odsek_ali_ulica,stacionazna_ali_hisna_st,opis_prizorisce,vzrok_nesreca,tip_nesreca,vreme_nesreca,stanje_promet,stanje_vozisce,stanje_povrsina_vozisce,x,y,x_wgs84,y_wgs84
+- oseba: id_nesreca,povzrocitelj_ali_udelezenec,starost,spol,upravna_enota,drzavljanstvo,poskodba,vrsta_udelezenca,varnostni_pas_ali_celada,vozniski_staz_LL,vozniski_staz_MM,alkotest,strokovni_pregled,starost_d,vozniski_staz_d,alkotest_d,strokovni_pregled_d
+- upravna_enota: id_upravna_enota,ime_upravna_enota,st_prebivalcev,povrsina

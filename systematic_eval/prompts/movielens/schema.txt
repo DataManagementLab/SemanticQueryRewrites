@@ -1,0 +1,7 @@
+- actors: actorid,a_gender,a_quality
+- directors: directorid,d_quality,avg_revenue
+- movies: movieid,year,isEnglish,country,runningtime
+- movies2actors: movieid,actorid,cast_num
+- movies2directors: movieid,directorid,genre
+- u2base: userid,movieid,rating
+- users: userid,age,u_gender,occupation

@@ -1,0 +1,20 @@
+{
+    "id": "SEZNAM_R1",
+    "requires": {
+        "op": "AND",
+        "conditions": [
+            {
+                "column": "dobito.kc_dobito",
+                "op": ">=",
+                "value": 1000
+            }
+        ]
+    },
+    "implies": [
+        {
+            "column": "dobito.kc_dobito",
+            "op": ">",
+            "value": 0
+        }
+    ]
+}

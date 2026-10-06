@@ -1,0 +1,20 @@
+{
+    "id": "ACCIDENTS_R1",
+    "requires": {
+        "op": "AND",
+        "conditions": [
+            {
+                "column": "oseba.vozniski_staz_LL",
+                "op": ">=",
+                "value": 30
+            }
+        ]
+    },
+    "implies": [
+        {
+            "column": "oseba.starost",
+            "op": ">=",
+            "value": 45
+        }
+    ]
+}

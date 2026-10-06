@@ -1,0 +1,39 @@
+[project]
+name = "zeroshot-scorer"
+version = "0.1.0"
+description = "Standalone ZeroShot learned-cost scorer for the semantic-rewrite pipeline."
+# Isolated from the main project (py3.13): the ldb_models stack pins py3.12 + torch 2.3 + dgl cu121.
+requires-python = "==3.12.*"
+readme = "README.md"
+dependencies = [
+    "torch==2.3.0",
+    "psycopg2-binary",
+    "orjson>=3.10",
+    "numpy",
+    "tqdm",
+    # Private DataManagementLab repo; auth via git credentials on the host.
+    "ldb_models @ git+https://github.com/DataManagementLab/ldb_models.git@subplex",
+]
+
+[tool.uv]
+# This project ships no importable package (vendor/ is added to sys.path at runtime),
+# so uv should install only the dependencies, not try to build/install this project.
+package = false
+# dgl is published as platform-specific wheels, not on PyPI.
+override-dependencies = [
+    "dgl @ https://data.dgl.ai/wheels/torch-2.3/cu121/dgl-2.4.0%2Bcu121-cp312-cp312-manylinux1_x86_64.whl ; sys_platform == 'linux'",
+]
+
+[tool.uv.extra-build-dependencies]
+torch-scatter = ["torch==2.3.0"]
+
+[[tool.uv.index]]
+name = "pytorch-cuda"
+url = "https://download.pytorch.org/whl/cu121"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cuda", marker = "sys_platform == 'linux'" }
+
+# The vendored cross_db_benchmark parser is a plain package dir (scorer/vendor/),
+# added to sys.path by score_plans.py — no install step required.

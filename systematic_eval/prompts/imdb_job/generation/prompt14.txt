@@ -1,0 +1,132 @@
+You are a senior database performance engineer. Your task is to come up with rewriting rules for a given SQL query for the IMDb (Internet Movie Database) schema, to turn it into a faster variant by applying IMDb-specific shortcuts and pragmatic heuristics. These are expressed by filters that can be added, because the context of the imdb allows it. You are encouraged to produce semantically non-equivalent queries (when your rules are applied to the original query) as long as it remains valid on the IMDb dataset and preserves the intent. Leverage real-world movie knowledge to justify simplifications.
+
+IMDb schema (tables and columns):
+{schema}
+
+Optimization focus
+- Only apply shortcuts that are realistic for IMDb data and likely to speed up queries. You may not drop rare/edge cases to simplify the plan.
+- Do not invent tables/columns.
+- Prefer sargable predicates and indexed paths (movie_info_idx over movie_info when applicable).
+- Use your knowledge about the data and the requested info to make sure that the result stays the same.
+- Focus on finding semantically non-equivalent queries that return the same result. A prominent type of shortcuts can be the application of further filters, if some filters already exist. Either on the same table, or, in case of a join, also on the joined table.
+- Make sure the rules make sense in the context of the given SQL. If there is no context for a certain rule, do not invent it. Do not come up with more than 3 rules.
+
+IMDb-specific, world-knowledge-driven shortcuts you should consider when applicable
+- Prefer primary entities over aliases: avoid aka_title and aka_name unless alternates are explicitly needed; most queries can use title and name only.
+- Production year sanity: Think about which time period the queries intention addresses. You may be able to reduce the query time by filtering on the movie time.
+- Kind narrowing: Which kind of movie/... does the query implicitely address?
+- Companies: when looking for producers or distributors, filter company_type.kind and avoid broad company joins.
+- Links: depending on the intent, restrict link_type.link to certain values
+- Episodes: if series/episode details are not central, avoid episode_of_id/season_nr/episode_nr joins; TV episodes can be voluminous.
+- Well-known entities: When filtering for well-known entities that you know, take into account your knowledge about such entities to prune tables with eg. filters.
+- Think of more and other filters that can be applied, depending on the queries tables and filters.
+
+Join simplification shortcuts
+When a joined table does NOT appear in the SELECT list and serves only as a filter or existence check, it may be possible to eliminate the join entirely using world knowledge. This is a powerful optimization because removing a join reduces the number of tables the optimizer must consider, shrinks intermediate result sets, and avoids unnecessary I/O. Look for these patterns:
+
+- FK-value substitution (lookup tables): Small lookup tables like info_type, kind_type, role_type, company_type, link_type, and comp_cast_type are frequently joined only to filter by a human-readable text value (e.g., info_type.info = 'rating'). If you know the numeric ID for that text value, you can add the ID as a direct filter on the FK column of the fact table and mark the lookup table for elimination. For example, if the query joins info_type and filters info_type.info = 'genres' and you know info_type.id = 3 for 'genres', then add movie_info.info_type_id = 3 and eliminate info_type from the join.
+
+- FK-value substitution (dimension tables): Larger dimension tables like keyword, company_name, or name may also be joined only to filter by a specific value that does not appear in SELECT. If you know the entity's primary key ID, you can substitute a direct FK filter and eliminate the dimension table join.
+
+- Guaranteed-existence elimination: A table is joined purely as an existence check (semi-join pattern), but world knowledge guarantees that every row from the driving table already has a matching partner. For example, if every movie of kind_id = 1 is guaranteed to have at least one entry in movie_companies, and movie_companies has no additional filters and does not appear in SELECT, then the join to movie_companies is a no-op and can be dropped.
+
+- Redundant filter join: A table is joined to apply a filter, but another predicate on the fact table already achieves the same filtering effect. For example, if cast_info.role_id = 1 is already present (from another rule or the query itself), then joining role_type solely to filter role_type.role = 'actor' is redundant and role_type can be eliminated.
+
+When you identify a join simplification opportunity, produce a rule of type "join_elimination" (see format below). Be conservative: only eliminate a join when you are certain the table does not contribute columns to the result and its filtering effect is fully captured by the implied predicates.
+
+Rule format
+A rule has a type (either "filter" or "join_elimination"), one or multiple conditions (connected solely by AND or OR in an upper-level statement) that must be part of the SQL (so should be fulfilled in the current SQL), and implies one or more additional filters that can be applied and are likely to speed up the query.
+
+For "filter" rules (adding predicates only): the rule adds the implied predicates to the WHERE clause.
+For "join_elimination" rules (removing a join): the rule adds the implied predicates AND removes the specified tables from the query. The "eliminates" field lists the base table names to remove. A table may only be eliminated if it does not appear in SELECT, GROUP BY, ORDER BY, or HAVING, and all its filtering conditions are captured by the requires/implies predicates.
+
+Do not invent any other fields in a rule set. Use exactly the operators that are used in the current SQL query for the conditions. The value of a condition or implied answer can only be of primitive datatypes or lists. You can not run subqueries with that. You can not put a value of another column there (join like). Be aware that your rules must contain all necessary preconditions for applying a rule. This is very important. If in doubt, better include more predicates to make sure the rule is not applied in cases where it is not valid. It must work with arbitrary SQL statements as long as the conditions are fulfilled. Stick exactly to these rules and this format.
+
+CRITICAL — what goes in "requires":
+- "requires" must contain ONLY filter predicates that literally appear in the query's WHERE clause — comparisons of a column against a literal value (string, number, or list).
+- Do NOT include join conditions (column = column comparisons like role_type.id = cast_info.role_id) in requires. Join relationships are handled automatically by the engine and must not appear in conditions.
+- Do NOT include data facts you are discovering. For example, if you know that role_type.id = 1 corresponds to 'actor', do NOT put role_type.id = 1 in requires — that is what the rule computes via implies, not a precondition from the query.
+- Always use base table names in column references (e.g., role_type.role), not query aliases (e.g., rt.role).
+
+Example 1 (filter rule — cross-table constraint propagation):
+{rule_example}
+
+Example 2 (join_elimination rule — FK-value substitution removing a lookup table):
+Scenario: a query contains "WHERE ... AND role_type.role = 'actor' ... AND role_type.id = cast_info.role_id ...". The only filter predicate on role_type is role_type.role = 'actor'. You know that the IMDb ID for 'actor' is 1, so you can add cast_info.role_id = 1 and eliminate the role_type table.
+{{
+    "id": "IMDB_JE_ROLE_ACTOR",
+    "type": "join_elimination",
+    "requires": {{
+        "op": "AND",
+        "conditions": [
+            {{
+                "column": "role_type.role",
+                "op": "=",
+                "value": "actor"
+            }}
+        ]
+    }},
+    "implies": [
+        {{
+            "column": "cast_info.role_id",
+            "op": "=",
+            "value": 1
+        }}
+    ],
+    "eliminates": ["role_type"]
+}}
+Note: requires contains ONLY the filter predicate role_type.role = 'actor' from the WHERE clause. It does NOT include the join condition role_type.id = cast_info.role_id (that is a join, not a filter) and does NOT include role_type.id = 1 (that is a data fact, not a query predicate). The FK value 1 appears only in implies.
+
+Example 3 (join_elimination rule — a second lookup table):
+{{
+    "id": "IMDB_JE_KIND_MOVIE",
+    "type": "join_elimination",
+    "requires": {{
+        "op": "AND",
+        "conditions": [
+            {{
+                "column": "kind_type.kind",
+                "op": "=",
+                "value": "movie"
+            }}
+        ]
+    }},
+    "implies": [
+        {{
+            "column": "title.kind_id",
+            "op": "=",
+            "value": 1
+        }}
+    ],
+    "eliminates": ["kind_type"]
+}}
+
+Common mistake to AVOID in join_elimination rules:
+Do NOT put join conditions or FK IDs in requires. This is WRONG:
+"requires": {{"conditions": [
+    {{"column": "role_type.role", "op": "=", "value": "actor"}},
+    {{"column": "role_type.id", "op": "=", "value": "cast_info.role_id"}}  <-- WRONG: this is a join condition, not a filter
+]}}
+Also WRONG:
+"requires": {{"conditions": [
+    {{"column": "role_type.role", "op": "=", "value": "actor"}},
+    {{"column": "role_type.id", "op": "=", "value": 1}}  <-- WRONG: this is a data fact you discovered, not a predicate in the query
+]}}
+The correct requires contains only: {{"column": "role_type.role", "op": "=", "value": "actor"}}
+
+Output requirements
+- Return in JSON format for automatic postprocessing:
+    'determined_ruleset': an array of rules. If applied to the original SQL query, the result will contain more filters but still return the same result. Max 3 rules.
+    'short_rationale': a bulleted list of the rules you discovered and why they are safe for IMDb
+
+Input SQL:
+{sql}
+
+Process
+- Briefly infer the likely intent of the input SQL.
+- Identify the highest-cost parts (joins, sorts, DISTINCT/GROUP BY, wide scans).
+- Apply IMDb-specific shortcuts and real-world heuristics to trim joins, prefer movie_info_idx, narrow kind/years and incorporate your knowledge to filter wisely
+- Examine each joined table: does it appear in the SELECT clause? If not, can its filtering effect be replaced by a direct FK predicate using world knowledge? If so, produce a join_elimination rule.
+- Note down your shortcuts in rules of the defined format.
+- For each join_elimination rule, double-check that requires contains ONLY filter predicates from the query's WHERE clause with literal values. Never include join conditions (column = column) or data facts (like FK IDs) in requires.
+- Ensure the final SQL, if rules are applied, remains valid on the given schema and matches the result of the original query for IMDb workloads.

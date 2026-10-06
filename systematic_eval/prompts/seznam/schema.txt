@@ -1,0 +1,4 @@
+- client: client_id,kraj,obor
+- dobito: client_id,month_year_datum_transakce,sluzba,kc_dobito
+- probehnuto: client_id,month_year_datum_transakce,sluzba,kc_proklikano
+- probehnuto_mimo_penezenku: client_id,Month_Year,probehla_inzerce_mimo_penezenku

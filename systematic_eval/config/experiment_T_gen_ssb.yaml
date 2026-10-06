@@ -1,0 +1,57 @@
+model: "gpt-5.4-2026-03-05"
+budget: 0.01
+
+dataset:
+  name: "ssb"
+  sql_dir: "sql/ssb_200k"
+  excluded_files:
+    - "fkindexes.sql"
+    - "schema.sql"
+  db_file: "ssb.duckdb"
+  strip_min: false
+  query_limit: 100
+
+prompts:
+  system: "prompt01"
+  # Generic, question-style world-knowledge prompt: the shortcut hints name only the
+  # topic, not the answer, so the model has to derive the domain fact itself.
+  generation: "prompt_wk02"
+
+generation:
+  rounds: 4
+
+refinement:
+  enabled: true
+  iterations: 1
+  samples: 2
+  prompt: "refine_prompt02"
+
+execution:
+  performance_threshold: 0.001
+  attempts: 3
+  validation_mode: "base_tables"
+  cost_estimation: true
+  warmup_mode: per_query
+  # Bound DuckDB spill so a runaway base-table validation query (e.g. an
+  # under-constrained join near-cartesian product) fails catchably instead of
+  # OOM/disk-killing the process and leaving no result.json.
+  max_temp_size: "50GB"
+  # Per-query wall-clock timeout: any single run exceeding 4 min is interrupted
+  # and its rule skipped/discarded.
+  query_timeout_s: 240
+
+remote:
+  server: "c07"
+  path: "/mnt/labstore/psiegler/c07_multi_query_comparison/"
+
+aggregation:
+  prefix_len: 3
+  time_filtering: false
+  # Largest candidate rule pool per query makes the oracle most informative.
+  cross_query_transfer: true
+
+statistics:
+  show_stats: variance
+  runtime_aggregator: mean
+  # Emit both the optimizer view and the oracle upper bound side-by-side.
+  mode: both

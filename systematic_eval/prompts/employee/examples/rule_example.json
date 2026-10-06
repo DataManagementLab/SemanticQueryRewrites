@@ -1,0 +1,20 @@
+{
+    "id": "EMPLOYEE_R1",
+    "requires": {
+        "op": "AND",
+        "conditions": [
+            {
+                "column": "titles.to_date",
+                "op": "=",
+                "value": "9999-01-01"
+            }
+        ]
+    },
+    "implies": [
+        {
+            "column": "titles.from_date",
+            "op": "<=",
+            "value": "2003-01-01"
+        }
+    ]
+}

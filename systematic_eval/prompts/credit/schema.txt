@@ -1,0 +1,9 @@
+- category: category_no,category_desc,category_code
+- charge: charge_no,member_no,provider_no,category_no,charge_dt,charge_amt,statement_no,charge_code
+- corporation: corp_no,corp_name,street,city,state_prov,country,mail_code,phone_no,expr_dt,region_no,corp_code
+- member: member_no,lastname,firstname,middleinitial,street,city,state_prov,country,mail_code,phone_no,photograph,issue_dt,expr_dt,region_no,corp_no,prev_balance,curr_balance,member_code
+- payment: payment_no,member_no,payment_dt,payment_amt,statement_no,payment_code
+- provider: provider_no,provider_name,street,city,state_prov,mail_code,country,phone_no,issue_dt,expr_dt,region_no,provider_code
+- region: region_no,region_name,street,city,state_prov,country,mail_code,phone_no,region_code
+- statement: statement_no,member_no,statement_dt,due_dt,statement_amt,statement_code
+- status: status_code,status_desc

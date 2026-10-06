@@ -1,0 +1,20 @@
+{
+    "id": "HEPATITIS_R1",
+    "requires": {
+        "op": "AND",
+        "conditions": [
+            {
+                "column": "indis.gpt",
+                "op": ">",
+                "value": 100
+            }
+        ]
+    },
+    "implies": [
+        {
+            "column": "indis.got",
+            "op": ">",
+            "value": 0
+        }
+    ]
+}

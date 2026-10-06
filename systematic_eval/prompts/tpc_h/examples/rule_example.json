@@ -1,0 +1,20 @@
+{
+    "id": "TPC_H_R1",
+    "requires": {
+        "op": "AND",
+        "conditions": [
+            {
+                "column": "lineitem.l_returnflag",
+                "op": "=",
+                "value": "R"
+            }
+        ]
+    },
+    "implies": [
+        {
+            "column": "lineitem.l_linestatus",
+            "op": "=",
+            "value": "F"
+        }
+    ]
+}

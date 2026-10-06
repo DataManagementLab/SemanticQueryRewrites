@@ -1,0 +1,20 @@
+{
+    "id": "CREDIT_R1",
+    "requires": {
+        "op": "AND",
+        "conditions": [
+            {
+                "column": "provider.region_no",
+                "op": "=",
+                "value": 5
+            }
+        ]
+    },
+    "implies": [
+        {
+            "column": "provider.country",
+            "op": "=",
+            "value": "USA"
+        }
+    ]
+}

@@ -1,0 +1,38 @@
+You are a senior database performance engineer. Your task is to come up with rewriting rules for a given SQL query over a Czech bank database (accounts, clients, dispositions, cards, loans, orders, transactions, districts), to turn it into a faster variant by applying banking-specific shortcuts and pragmatic heuristics. These are expressed by filters that can be added, because the context of this financial (Czech bank) dataset allows it. You are encouraged to produce semantically non-equivalent queries (when your rules are applied to the original query) as long as it remains valid on this financial (Czech bank) dataset and preserves the intent. Leverage real-world banking knowledge to justify simplifications.
+
+Banking schema (tables and columns):
+{schema}
+
+Optimization focus
+- Only apply shortcuts that are realistic for this financial (Czech bank) dataset and likely to speed up queries. You may not drop rare/edge cases to simplify the plan.
+- Do not invent tables/columns. Use exactly the column names from the schema (they are case-sensitive and used quoted).
+- Prefer sargable predicates (e.g. range bounds) that the optimizer can use to prune scans.
+- Use your knowledge about the data and the requested info to make sure that the result stays the same.
+- Focus on finding semantically non-equivalent queries that return the same result. A prominent type of shortcuts can be the application of further filters, if some filters already exist. Either on the same table, or, in case of a join, also on the joined table.
+- Make sure the rules make sense in the context of the given SQL. If there is no context for a certain rule, do not invent it. Do not come up with more than 3 rules.
+
+Banking-specific, world-knowledge-driven shortcuts you should consider when applicable
+- District carry: If a query already pins a district on one table, does the same district hold on the joined side? Consider carrying it across the join.
+- Disposition & cards: Which role does a disposition play here, and what does the presence of a card join imply about it? Prune accordingly.
+- Loan context: If a loan is involved, what does that imply about the account's history and its state? Think about which status is relevant.
+- Transaction sanity: Think about which sign and value range the transactions realistically take, given the operation the query addresses.
+- Date window: Think about which time period the query's intention addresses — you may be able to bound the dates.
+- Think of more and other filters that can be applied, depending on the query's tables and filters.
+
+A rule has one or multiple conditions (connected solely by AND or OR in an upper-level statement) that must be part of the SQL (so should be fulfilled in the current SQL) and implies one more more additional filters that can be applied and are likely to speed up the query. Do not invent any other fields in a rule set. Use exactly the operators that are used in the current SQL query for the conditions. The value of a condition or implied answer can only be of primitive datatypes or lists. You can not run subqueries with that. You can not put a value of another column there (join like). Be aware that your rules must contain all necessary preconditions for applying a rule. This is very important. If in doubt, better include more predicates to make sure the rule is not applied in cases where it is not valid. It must work with arbitrary SQL statements as long as the conditions are fulfilled. Stick exactly to these rules and this format. An example looks like:
+{rule_example}
+
+Output requirements
+- Return in JSON format for automatic postprocessing:
+    'determined_ruleset': an array of rules. If applied to the original SQL query, the result will contain more filters but still return the same result. Max 3 rules.
+    'short_rationale': a bulleted list of the rules you discovered and why they are safe for this financial (Czech bank) dataset
+
+Input SQL:
+{sql}
+
+Process
+- Briefly infer the likely intent of the input SQL.
+- Identify the highest-cost parts (joins, sorts, DISTINCT/GROUP BY, wide scans).
+- Apply banking-specific shortcuts and real-world heuristics to trim joins, narrow scans and incorporate your knowledge to filter wisely.
+- Note down your shortcuts in rules of the defined format.
+- Ensure the final SQL, if rules are applied, remains valid on the given schema and matches the result of the original query for this financial (Czech bank) dataset.

@@ -1,0 +1,45 @@
+{
+            "id": "IMDB_R2",
+            "requires": {
+                "op": "AND",
+                "conditions": [
+                    {
+                        "column": "title_basics.titleType",
+                        "op": "=",
+                        "value": "movie"
+                    },
+                    {
+                        "op": "OR",
+                        "conditions": [
+                            {
+                                "op": "AND",
+                                "conditions": [
+                                    {
+                                        "column": "title_basics.startYear",
+                                        "op": "<",
+                                        "value": 1970
+                                    },
+                                    {
+                                        "column": "title_ratings.averageRating",
+                                        "op": ">=",
+                                        "value": 8.0
+                                    }
+                                ]
+                            },
+                            {
+                                "column": "title_ratings.averageRating",
+                                "op": ">=",
+                                "value": 9.0
+                            }
+                        ]
+                    }
+                ]
+            },
+            "implies": [
+                {
+                    "column": "title_basics.genres",
+                    "op": "IN",
+                    "value": ["Drama", "Film-Noir", "History"]
+                }
+            ]
+        }

@@ -1,0 +1,61 @@
+model: "gpt-5.4-2026-03-05"
+budget: 0.01
+
+dataset:
+  name: "imdb_job"
+  sql_dir: "sql/job"
+  excluded_files:
+    - "fkindexes.sql"
+    - "schema.sql"
+  db_file: "imdb.duckdb"
+  strip_min: true
+  # query_limit: 20
+
+prompts:
+  system: "prompt01"
+  generation: "prompt12"
+
+generation:
+  rounds: 4
+
+refinement:
+  enabled: true
+  iterations: 1
+  samples: 2
+  prompt: "refine_prompt02"
+
+execution:
+  performance_threshold: 0.001
+  attempts: 3
+  validation_mode: "base_tables"
+  # Cost estimation on, as in the other T-runs. With statistics.mode=both the
+  # controller adds --keep-full-pool, so final-exec still enumerates the full
+  # powerset into per_subset_results for the oracle bound while the cost winner is
+  # recorded for the optimizer view.
+  cost_estimation: true
+  # Pin the original query's join tree on the refined queries: the refined SQL is
+  # rebuilt with the original plan's join order and run with the join-order
+  # optimizer disabled. Isolates the predicate effect from join-order perturbation.
+  fix_join_order: true
+  warmup_mode: per_query
+
+remote:
+  server: "c07"
+  path: "/mnt/labstore/psiegler/c07_multi_query_comparison/"
+
+aggregation:
+  prefix_len: 3
+  time_filtering: false
+  # Largest candidate rule pool per query makes the oracle most informative.
+  cross_query_transfer: true
+  # allowed_rule_types: ["filter", "join_elimination"]
+
+statistics:
+  # mode: both means every reported runtime comes from per_subset_results, i.e. the
+  # execution stage's MEDIAN over execution.attempts. runtime_aggregator therefore
+  # cannot apply here (no per-attempt list survives per subset) and is pinned to the
+  # value this run actually reports; show_stats is omitted because these views carry
+  # no per-attempt spread. See config/experiment_template.yaml for the full scope note.
+  runtime_aggregator: median
+  # Emit both the optimizer view and the oracle upper bound side-by-side.
+  mode: both

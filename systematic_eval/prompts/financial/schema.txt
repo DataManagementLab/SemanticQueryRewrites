@@ -1,0 +1,8 @@
+- account: account_id,district_id,frequency,date
+- card: card_id,disp_id,type,issued
+- client: client_id,gender,birth_date,district_id
+- disp: disp_id,client_id,account_id,type
+- district: district_id,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11,A12,A13,A14,A15,A16
+- loan: loan_id,account_id,date,amount,duration,payments,status
+- orders: order_id,account_id,bank_to,account_to,amount,k_symbol
+- trans: trans_id,account_id,date,type,operation,amount,balance,k_symbol,bank,account

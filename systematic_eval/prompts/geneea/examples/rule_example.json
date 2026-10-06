@@ -1,0 +1,20 @@
+{
+    "id": "GENEEA_R1",
+    "requires": {
+        "op": "AND",
+        "conditions": [
+            {
+                "column": "hl_hlasovani.pro",
+                "op": ">=",
+                "value": 101
+            }
+        ]
+    },
+    "implies": [
+        {
+            "column": "hl_hlasovani.vysledek",
+            "op": "=",
+            "value": "A"
+        }
+    ]
+}

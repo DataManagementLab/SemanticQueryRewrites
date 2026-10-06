@@ -1,0 +1,20 @@
+{
+    "id": "CARCINOGENESIS_R1",
+    "requires": {
+        "op": "AND",
+        "conditions": [
+            {
+                "column": "atom.atomtype",
+                "op": "=",
+                "value": "c"
+            }
+        ]
+    },
+    "implies": [
+        {
+            "column": "atom.charge",
+            "op": ">=",
+            "value": -1
+        }
+    ]
+}

@@ -1,0 +1,6 @@
+- atom: atomid,drug,atomtype,charge,name
+- canc: drug_id,col_class
+- sbond_1: id,drug,atomid,atomid_2
+- sbond_2: id,drug,atomid,atomid_2
+- sbond_3: id,drug,atomid,atomid_2
+- sbond_7: id,drug,atomid,atomid_2

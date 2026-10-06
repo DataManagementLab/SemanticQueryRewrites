@@ -1,0 +1,20 @@
+[project]
+name = "semantic-sql-rewrites-thesis-psiegler"
+version = "1.0.0"
+description = "Mining and evaluating semantic (non-equivalent, instance-correct) SQL query rewrites with an LLM — code artifact of the master's thesis 'Semantic Query Rewrites'."
+readme = "README.md"
+requires-python = ">=3.13"
+authors = [{ name = "Philipp Siegler" }]
+dependencies = [
+    "dotenv>=0.9.9",
+    "duckdb==1.4.3",  # pinned: 1.5.x profiling emits qualified table names that break fix_join_order reconstruction
+    "graphviz>=0.21",
+    "matplotlib>=3.10.8",
+    "numpy>=2.0",
+    "pyyaml>=6.0",
+    "requests>=2.32.5",
+    "sqlglot>=28.6.0",
+    "tiktoken>=0.12.0",
+    "tokenizers>=0.22.2",
+    "tqdm>=4.67.1",
+]

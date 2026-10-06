@@ -1,0 +1,3 @@
+- key: store_nbr,station_nbr
+- station: station_nbr
+- train: date,store_nbr,item_nbr,units

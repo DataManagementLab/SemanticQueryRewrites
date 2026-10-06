@@ -1,0 +1,20 @@
+{
+    "id": "WALMART_R1",
+    "requires": {
+        "op": "AND",
+        "conditions": [
+            {
+                "column": "train.units",
+                "op": ">",
+                "value": 100
+            }
+        ]
+    },
+    "implies": [
+        {
+            "column": "train.units",
+            "op": ">",
+            "value": 0
+        }
+    ]
+}

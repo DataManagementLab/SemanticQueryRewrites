@@ -1,0 +1,20 @@
+{
+    "id": "CONSUMER_R1",
+    "requires": {
+        "op": "AND",
+        "conditions": [
+            {
+                "column": "EXPENDITURES.GIFT",
+                "op": "=",
+                "value": 1
+            }
+        ]
+    },
+    "implies": [
+        {
+            "column": "EXPENDITURES.COST",
+            "op": ">",
+            "value": 0
+        }
+    ]
+}

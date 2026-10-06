@@ -1,0 +1,45 @@
+{
+            "id": "BASKETBALL_R2",
+            "requires": {
+                "op": "AND",
+                "conditions": [
+                    {
+                        "column": "teams.lgID",
+                        "op": "=",
+                        "value": "NBA"
+                    },
+                    {
+                        "op": "OR",
+                        "conditions": [
+                            {
+                                "op": "AND",
+                                "conditions": [
+                                    {
+                                        "column": "teams.year",
+                                        "op": "<",
+                                        "value": 1980
+                                    },
+                                    {
+                                        "column": "teams.o_3pa",
+                                        "op": ">",
+                                        "value": 0
+                                    }
+                                ]
+                            },
+                            {
+                                "column": "teams.year",
+                                "op": ">=",
+                                "value": 1980
+                            }
+                        ]
+                    }
+                ]
+            },
+            "implies": [
+                {
+                    "column": "teams.confID",
+                    "op": "IN",
+                    "value": ["EA", "WE"]
+                }
+            ]
+        }

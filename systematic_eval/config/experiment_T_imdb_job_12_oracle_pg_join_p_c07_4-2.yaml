@@ -1,0 +1,70 @@
+model: "gpt-5.4-2026-03-05"
+budget: 0.01
+
+dataset:
+  name: "imdb_job"
+  sql_dir: "sql/job"
+  excluded_files:
+    - "fkindexes.sql"
+    - "schema.sql"
+  db_file: "imdb.duckdb"
+  strip_min: true
+  # query_limit: 20
+
+prompts:
+  system: "prompt01"
+  generation: "prompt12"
+
+generation:
+  rounds: 4
+
+refinement:
+  enabled: true
+  iterations: 1
+  samples: 2
+  prompt: "refine_prompt02"
+
+execution:
+  performance_threshold: 0.001
+  attempts: 3
+  validation_mode: "base_tables"
+  engine: "postgres"
+  postgres_port: 5433
+  postgres_dbname: "imdb"
+  # Postgres' own default. Stated explicitly so the run's planner assumption is
+  # recorded in the config; the _rpc1-1 sibling config is the SSD-tuned counterpart.
+  postgres_random_page_cost: 4.0
+  # Cost estimation on, as in the duckdb/umbra T-runs. With statistics.mode=both the
+  # controller adds --keep-full-pool, so final-exec still enumerates the full powerset
+  # into per_subset_results for the oracle bound while the EXPLAIN cost winner is
+  # recorded as metadata for the optimizer view.
+  cost_estimation: true
+  # Pin the original query's join tree on the rewritten queries: the refined SQL is
+  # rebuilt with the original plan's join order and replayed with that order forced
+  # (postgres: pg_lab JoinOrder hint). Isolates the predicate effect from join-order
+  # perturbation. Only difference to experiment_T_imdb_job_12_oracle_pg_c07_4-2.
+  fix_join_order: true
+  # Postgres primes its buffer pool + plan cache once after container start; the state
+  # survives in the container, so no per-query warmup (matches the other pg configs).
+  warmup_mode: startup_only
+
+remote:
+  server: "c07"
+  path: "/mnt/labstore/psiegler/c07_multi_query_comparison_pg/"
+
+aggregation:
+  prefix_len: 3
+  time_filtering: false
+  # Largest candidate rule pool per query makes the oracle most informative.
+  cross_query_transfer: true
+  # allowed_rule_types: ["filter", "join_elimination"]
+
+statistics:
+  # mode: both means every reported runtime comes from per_subset_results, i.e. the
+  # execution stage's MEDIAN over execution.attempts. runtime_aggregator therefore
+  # cannot apply here (no per-attempt list survives per subset) and is pinned to the
+  # value this run actually reports; show_stats is omitted because these views carry
+  # no per-attempt spread. See config/experiment_template.yaml for the full scope note.
+  runtime_aggregator: median
+  # Emit both the optimizer view and the oracle upper bound side-by-side.
+  mode: both

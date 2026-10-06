@@ -1,0 +1,35 @@
+You are a senior database performance engineer. Your task is to rewrite a given SQL query for the IMDb (Internet Movie Database) schema into a faster variant by applying IMDb-specific shortcuts and pragmatic heuristics. You are encouraged to produce a semantically non-equivalent query as long as it remains valid on the IMDb dataset and preserves the intent. Leverage real-world movie knowledge to justify simplifications.
+
+IMDb schema (tables and columns):
+{schema}
+
+Optimization focus
+- Only apply shortcuts that are realistic for IMDb data and likely to speed up queries. You may not drop rare/edge cases to simplify the plan.
+- Do not invent tables/columns.
+- Prefer sargable predicates and indexed paths (movie_info_idx over movie_info when applicable).
+- Use your knowledge about the data and the requested info to make sure that the result stays the same.
+- Focus on finding semantically non-equivalent queries that return the same result. A prominent type of shortcuts can be the application of further filters, if some filters already exist. Either on the same table, or, in case of a join, also on the joined table.
+
+IMDb-specific, world-knowledge-driven shortcuts you should consider when applicable
+- Prefer primary entities over aliases: avoid aka_title and aka_name unless alternates are explicitly needed; most queries can use title and name only.
+- Production year sanity: Think about which time period the queries intention addresses. You may be able to reduce the query time by filtering on the movie time.
+- Kind narrowing: Which kind of movie/... does the query implicitely address?
+- Companies: when looking for producers or distributors, filter company_type.kind and avoid broad company joins.
+- Links: depending on the intent, restrict link_type.link to certain values
+- Episodes: if series/episode details are not central, avoid episode_of_id/season_nr/episode_nr joins; TV episodes can be voluminous.
+- Well-known entities: When filtering for well-known entities that you know, take into account your knowledge about such entities to prune tables with eg. filters.
+- Think of more and other filters that can be applied, depending on the queries tables and filters.
+
+Output requirements
+- Return in JSON format for automatic postprocessing:
+    'optimized_sql': a single, runnable SQL statement tailored to IMDb.
+    'short_rationale': a bulleted list of the shortcuts you applied and why they are safe for IMDb
+
+Input SQL:
+{sql}
+
+Process
+- Briefly infer the likely intent of the input SQL.
+- Identify the highest-cost parts (joins, sorts, DISTINCT/GROUP BY, wide scans).
+- Apply IMDb-specific shortcuts and real-world heuristics to trim joins, prefer movie_info_idx, narrow kind/years and incorporate your knowledge to filter wisely
+- Ensure the final SQL remains valid on the given schema and matches the result of the original query for IMDb workloads.

@@ -1,0 +1,190 @@
+# Experiment Configuration Template
+# Copy this file and adjust for your experiment.
+#
+# This template lists EVERY parameter accepted by `config_loader.py`, each with its
+# default. Keys that are commented out are optional — leaving them out keeps the
+# default shown in the comment. Only `model` and `dataset` (name + sql_dir) are
+# strictly required.
+#
+# The experiment is identified by this file's name: `experiment_<name>.yaml` drives
+# `transfer_data/experiment_<name>/` and `saved_results/experiment_<name>/`.
+
+# LLM model identifier (OpenAI model id used for generation + refinement)
+model: "gpt-5.4-2026-03-05"
+
+# Maximum budget per LLM call in USD; a call whose estimated cost exceeds it is refused
+budget: 0.01
+
+# Use the on-disk LLM response cache (./llm_cache). false = force fresh API calls.
+use_llm_cache: true
+
+dataset:
+  # Dataset name — must match a directory under prompts/
+  name: "imdb_job"
+  # Path to SQL query files (relative to repo root)
+  sql_dir: "sql/job"
+  # SQL files to exclude from evaluation
+  excluded_files:
+    - "fkindexes.sql"
+    - "schema.sql"
+  # Database file name (on the remote execution server); DuckDB file name, and also the
+  # identifier used to pick the dataset for the postgres/umbra setup helpers
+  db_file: "imdb.duckdb"
+  # Strip MIN() wrappers from SQL queries (JOB-style aggregate-only queries)
+  strip_min: true
+  # Use only the first N query files (sorted deterministically). null/absent = all.
+  # Handy for smoke runs and for huge workloads (e.g. basketball).
+  # query_limit: 100
+
+prompts:
+  # System prompt name (loaded from prompts/<dataset>/system/<name>.txt)
+  system: "prompt01"
+  # Generation prompt name (loaded from prompts/<dataset>/generation/<name>.txt)
+  generation: "prompt10"
+
+generation:
+  # Independent LLM samples per query (breadth); deduped on requires+implies.
+  rounds: 1
+
+refinement:
+  # Whether to run the refinement (feedback) loop at all
+  enabled: true
+  # Number of sequential refine→execute cycles (depth)
+  iterations: 1
+  # Independent refinement samples per failed rule (breadth); deduped like generation.
+  samples: 1
+  # Refinement prompt name (loaded from prompts/<dataset>/refinement/<name>.txt)
+  prompt: "refine_prompt02"
+
+execution:
+  # --- measurement ---
+  # Minimum relative improvement to count as "performance_improvement"
+  # (time_original - time_rewritten > threshold * time_original).
+  # INERT: the flag it computes is only recorded in the result artifact, never acted
+  # on. Rule acceptance is governed by aggregation.time_filtering.
+  performance_threshold: 0.05
+  # Number of timing repetitions per query. The execution stage collapses them to
+  # their MEDIAN (per-pipeline median summed on Umbra) and stores that single value
+  # per query and per rule subset. statistics.runtime_aggregator does NOT govern
+  # this step, and it cannot re-collapse a subset, which keeps no per-attempt list.
+  attempts: 3
+  # Rule correctness check:
+  #   "base_tables" — the soundness gate; required for cross-query transfer
+  #   "query"       — per-query output-equality check (does not transfer)
+  #   "both"        — run both checks
+  validation_mode: "query"
+  # Cache/warmup handling before the measured runs:
+  #   "per_query"              — discard one warmup run before each measured query
+  #   "startup_only"           — warm once after engine/container start (typical for postgres)
+  #   "startup_and_per_query"  — both
+  #   "none"                   — measure cold
+  warmup_mode: "per_query"
+  # Per-query wall-clock timeout in seconds; an over-running query is interrupted and its
+  # rule discarded. 0 = no timeout.
+  query_timeout_s: 0.0
+  # Parallel workers for the validation runs (initial + refinement), DuckDB only.
+  # 0 = auto (half the node's cores), 1 = serial. The final performance measurement
+  # always runs serial/exclusive regardless of this setting.
+  validation_workers: 0
+  # Also measure the originals of queries without any rule (median of `attempts`) so the
+  # runtime-weighted whole-workload improvement can be drawn on the *_speedup_bar_all plots.
+  measure_workload_baseline: true
+  # Pin the rewrite to the original query's join order (DuckDB/Postgres; not Umbra).
+  # Confounder control isolating predicate selectivity from replanning.
+  fix_join_order: false
+
+  # --- engine selection ---
+  # "duckdb" | "umbra" | "postgres"
+  engine: "duckdb"
+
+  # DuckDB only: cap on-disk spill (e.g. "50GB") so a runaway query fails catchably
+  # instead of OOM-killing the node. "0" = unlimited.
+  max_temp_size: "0"
+  # DuckDB only: `cat <db_file> > /dev/null` once before measurements to prime the OS
+  # page cache, so the first measured query is not penalised by cold file I/O.
+  prime_os_cache: true
+
+  # Umbra only
+  umbra_port: 5432
+  # Umbra only: hard RAM cap for the container (docker --memory/--memory-swap) so a
+  # runaway join fails inside Umbra instead of OOM-killing the host. 0 = unlimited.
+  # Analogous to DuckDB's max_temp_size.
+  umbra_memory_gb: 0.0
+  # Umbra/Postgres only: backstop RAM cap on the run_sql.py *driver* process
+  # (systemd-run --scope, host side). The container cap does not bound client-side
+  # fetches, so a huge result set materialised in the driver could still exhaust the
+  # host. 0 = no cap. No effect for DuckDB (the engine runs inside the driver).
+  driver_memory_gb: 0.0
+
+  # Postgres only
+  postgres_host: "127.0.0.1"
+  postgres_port: 5432
+  postgres_user: "postgres"
+  postgres_password: "postgres"
+  postgres_dbname: "imdb"
+  # Postgres only: ALTER SYSTEM SET random_page_cost, applied after postgresql16.conf
+  # (so it wins). Omit to leave it at postgres' own default of 4.0; ~1.1 models an SSD.
+  # postgres_random_page_cost: 1.1
+
+  # --- cost-based rule-subset selection (aggregation / final execution) ---
+  # EXPLAIN-based cost filtering: instead of measuring the whole powerset of applicable
+  # rules, pick a winning subset per query from estimated cost.
+  cost_estimation: false
+  # Required relative cost reduction for a subset to beat the original. 0.0 = any reduction.
+  cost_save_threshold: 0.0
+  # Signal used to pick the winning subset:
+  #   "planner"  — the engine's own EXPLAIN cost
+  #   "zeroshot" — learned ZeroShot cost model predicting runtime (requires engine=postgres,
+  #                uses the external scorer/ subproject)
+  cost_model: "planner"
+  # Cap on unique candidate subsets scored per query
+  max_subsets: 4096
+  # ZeroShot scorer settings — only used when cost_model: "zeroshot"
+  # zeroshot_model_type: "pm-zeroshot-include_hint_idx_workloads-limit_plans_per_file10001"
+  # zeroshot_model_dir: "/mnt/labstore/SIGs/ML/learned_db/models/<name>/imdb"   # checkpoint dir
+  # zeroshot_seed: 9
+  # zeroshot_statistics_file: "/mnt/labstore/SIGs/ML/learned_db/feature_statistics/<file>.json"
+  # zeroshot_database_stats: "scorer/database_stats_imdb.json"  # scp'd with scorer/ to remote
+
+remote:
+  # SSH server alias for remote SQL execution
+  server: "c06"
+  # Working directory on the remote server (shared between experiments — use distinct
+  # paths if two runs may target the same host concurrently)
+  path: "/mnt/labstore/psiegler/multi_query_comparison/"
+
+aggregation:
+  # Group rules by SQL name prefix of this length (e.g. 3 for JOB's "10a" → "10a",
+  # 8 for longer generated file names). Controls which queries count as "the same query".
+  prefix_len: 8
+  # false = apply each rule only to the query it was generated from (within-query runs)
+  cross_query_transfer: true
+  # Require a query-level runtime improvement before a rule enters the pool.
+  # A performance filter, not a correctness one; oracle runs set it to false.
+  time_filtering: true
+  # Restrict the rule pool to certain rule types; null/absent = all types allowed.
+  # "filter" is the only type the thesis evaluates.
+  # allowed_rule_types: ["filter"]
+
+statistics:
+  # SCOPE OF THE NEXT TWO KEYS: they apply ONLY to the legacy all-rules optimizer
+  # view, the one view built from the per-attempt timing lists. The oracle view and
+  # the cost-winner optimizer view are built from per_subset_results, which holds
+  # the execution stage's median and no per-attempt list — there the runtime is
+  # always that median and the spread columns are always absent, whatever is set
+  # here. Any run with mode=oracle/both or cost_estimation: true is in that case,
+  # so for those runs both keys are inert and are best left at the defaults below.
+  #
+  # Extra spread columns + bar-plot error bars when N>1:
+  #   "none" | "range" (min/max, asymmetric bars) | "variance" (sample stddev n-1, ±σ bars)
+  show_stats: "none"
+  # How the N per-query runs are collapsed into one runtime for percent-saved in
+  # that legacy view: "median" | "mean". This is NOT how execution.attempts are
+  # collapsed — the execution stage always reports a median (see execution.attempts).
+  runtime_aggregator: "median"
+  # Which statistics view(s) to emit:
+  #   "optimizer" — the subset the planner/cost model picked (deployable, can regress)
+  #   "oracle"    — fastest output-matching subset per query (ceiling, not deployable)
+  #   "both"      — side by side from the same measured data
+  #                 (controller then passes --keep-full-pool to final execution)
+  mode: "optimizer"

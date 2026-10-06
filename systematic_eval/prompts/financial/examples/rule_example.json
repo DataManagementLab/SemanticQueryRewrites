@@ -1,0 +1,23 @@
+{
+    "id": "FINANCIAL_R1",
+    "requires": {
+        "op": "AND",
+        "conditions": [
+            {
+                "column": "loan.status",
+                "op": "IN",
+                "value": [
+                    "A",
+                    "C"
+                ]
+            }
+        ]
+    },
+    "implies": [
+        {
+            "column": "loan.amount",
+            "op": ">",
+            "value": 0
+        }
+    ]
+}

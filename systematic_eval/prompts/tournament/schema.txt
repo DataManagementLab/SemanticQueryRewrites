@@ -1,0 +1,9 @@
+- regular_season_compact_results: season,daynum,wteam,wscore,lteam,lscore,wloc,numot
+- regular_season_detailed_results: season,daynum,wteam,wscore,lteam,lscore,wloc,numot,wfgm,wfga,wfgm3,wfga3,wftm,wfta,wor,wdr,wast,wto,wstl,wblk,wpf,lfgm,lfga,lfgm3,lfga3,lftm,lfta,lor,ldr,last,lto,lstl,lblk,lpf
+- seasons: season,dayzero,regionW,regionX,regionY,regionZ
+- target: id,season,team_id1,team_id2,pred,team_id1_wins,team_id2_wins
+- teams: team_id,team_name
+- tourney_compact_results: season,daynum,wteam,wscore,lteam,lscore,wloc,numot
+- tourney_detailed_results: season,daynum,wteam,wscore,lteam,lscore,wloc,numot,wfgm,wfga,wfgm3,wfga3,wftm,wfta,wor,wdr,wast,wto,wstl,wblk,wpf,lfgm,lfga,lfgm3,lfga3,lftm,lfta,lor,ldr,last,lto,lstl,lblk,lpf
+- tourney_seeds: season,seed,team
+- tourney_slots: season,slot,strongseed,weakseed

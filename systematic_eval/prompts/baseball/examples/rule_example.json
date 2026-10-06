@@ -1,0 +1,20 @@
+{
+    "id": "BASEBALL_R1",
+    "requires": {
+        "op": "AND",
+        "conditions": [
+            {
+                "column": "teams.lgID",
+                "op": "=",
+                "value": "NL"
+            }
+        ]
+    },
+    "implies": [
+        {
+            "column": "teams.yearID",
+            "op": ">=",
+            "value": 1876
+        }
+    ]
+}

@@ -1,0 +1,20 @@
+{
+    "id": "TOURNAMENT_R1",
+    "requires": {
+        "op": "AND",
+        "conditions": [
+            {
+                "column": "tourney_detailed_results.wscore",
+                "op": ">",
+                "value": 0
+            }
+        ]
+    },
+    "implies": [
+        {
+            "column": "tourney_detailed_results.lscore",
+            "op": ">=",
+            "value": 0
+        }
+    ]
+}

@@ -1,0 +1,7 @@
+- Bio: fibros,activity,b_id
+- dispat: m_id,sex,age,Type
+- indis: got,gpt,alb,tbil,dbil,che,ttt,ztt,tcho,tp,in_id
+- inf: dur,a_id
+- rel11: b_id,m_id
+- rel12: in_id,m_id
+- rel13: a_id,m_id

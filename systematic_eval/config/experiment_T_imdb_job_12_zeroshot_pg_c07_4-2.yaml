@@ -1,0 +1,82 @@
+model: "gpt-5.4-2026-03-05"
+budget: 0.01
+
+dataset:
+  name: "imdb_job"
+  sql_dir: "sql/job"
+  excluded_files:
+    - "fkindexes.sql"
+    - "schema.sql"
+  db_file: "imdb.duckdb"
+  strip_min: true
+  # query_limit: 20
+
+prompts:
+  system: "prompt01"
+  generation: "prompt12"
+
+generation:
+  rounds: 4
+
+refinement:
+  enabled: true
+  iterations: 1
+  samples: 2
+  prompt: "refine_prompt02"
+
+execution:
+  performance_threshold: 0.001
+  attempts: 3
+  validation_mode: "base_tables"
+  engine: "postgres"
+  postgres_port: 5433
+  postgres_dbname: "imdb"
+  # Postgres' own default. Stated explicitly so the run's planner assumption is
+  # recorded in the config; the _rpc1-1 sibling config is the SSD-tuned counterpart.
+  postgres_random_page_cost: 4.0
+  # Cost estimation on, as in the duckdb/umbra T-runs. With statistics.mode=both the
+  # controller adds --keep-full-pool, so final-exec still enumerates the full powerset
+  # into per_subset_results for the oracle bound while the selected winner is recorded
+  # as metadata for the optimizer view.
+  cost_estimation: true
+  # Postgres primes its buffer pool + plan cache once after container start; the state
+  # survives in the container, so no per-query warmup (matches the other pg configs).
+  warmup_mode: startup_only
+  # --- ONLY substantive change vs. experiment_T_imdb_job_12_oracle_pg_c07_4-2 ---
+  # Rule-subset winner is chosen by the learned ZeroShot cost model instead of the
+  # Postgres optimizer's EXPLAIN cost. Everything else is held identical to the
+  # oracle_pg_c07_4-2 sibling, so the two runs form a single-axis comparison
+  # (learned cost model vs. Postgres optimizer) on the same frozen T rule pool.
+  # fix_join_order stays OFF (as in oracle_pg): Postgres chooses join order freely in
+  # both the scoring and the final execution, so only the pick differs.
+  cost_model: "zeroshot"
+  zeroshot_model_type: "pm-zeroshot-include_hint_idx_workloads-limit_plans_per_file10001"
+  zeroshot_model_dir: "/mnt/labstore/SIGs/ML/learned_db/models/pm-zeroshot-hi-limitpf10001/imdb"
+  zeroshot_seed: 9
+  zeroshot_statistics_file: "/mnt/labstore/SIGs/ML/learned_db/feature_statistics/parsed_plans3_feature_statistics_v20260309.json"
+  zeroshot_database_stats: "scorer/database_stats_imdb.json"   # scp'd with scorer/ to the remote
+  max_subsets: 4096
+
+remote:
+  server: "c07"
+  # Distinct from the oracle_pg run's remote workspace so the shared remote path is
+  # not clobbered when both runs target c07.
+  path: "/mnt/labstore/psiegler/c07_multi_query_comparison_zs_pg/"
+
+aggregation:
+  prefix_len: 3
+  time_filtering: false
+  # Largest candidate rule pool per query; kept identical to the oracle_pg sibling so
+  # the regenerated cost_aggregate_input.json is byte-identical to the frozen T pool.
+  cross_query_transfer: true
+  # allowed_rule_types: ["filter", "join_elimination"]
+
+statistics:
+  # mode: both means every reported runtime comes from per_subset_results, i.e. the
+  # execution stage's MEDIAN over execution.attempts. runtime_aggregator therefore
+  # cannot apply here (no per-attempt list survives per subset) and is pinned to the
+  # value this run actually reports; show_stats is omitted because these views carry
+  # no per-attempt spread. See config/experiment_template.yaml for the full scope note.
+  runtime_aggregator: median
+  # Emit both the optimizer view (learned pick) and the oracle upper bound side-by-side.
+  mode: both

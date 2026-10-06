@@ -1,0 +1,5 @@
+The rule you came up with:
+{failed_rule}
+does not work.
+Decide on weather to either refine the rule (by adjusting to the specific data needs) and return the rule in a reformatted way, or to not use a rule at all. If you decide to refine the rule, please return the refined rule in a the same format as before, if you decide to not use a rule, please return "no_rule" as the answer. In both cases, append a short explanation of your decision, as "short_rationale".
+You are encouraged to come up with an adjustions of the original rule that will more likely fit the data.

@@ -1,0 +1,20 @@
+{
+    "id": "MOVIELENS_R1",
+    "requires": {
+        "op": "AND",
+        "conditions": [
+            {
+                "column": "u2base.rating",
+                "op": ">=",
+                "value": 4
+            }
+        ]
+    },
+    "implies": [
+        {
+            "column": "u2base.rating",
+            "op": "<=",
+            "value": 5
+        }
+    ]
+}
