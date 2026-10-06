@@ -1,7 +1,6 @@
 # Semantic SQL Rewrites
 
-Code artifact of the master's thesis *Semantic Query Rewrites: Leveraging Large Language
-Models for World-Knowledge-Driven Non-Equivalent SQL Query Transformations* (TU Darmstadt).
+Code artifact of the paper *Towards Semantic Query Rewrites from LLM-Mined Rules*.
 
 A **semantic query rewrite** returns the same result as the original query on the database
 instance that is actually stored, without being equivalent on every possible instance. The
@@ -14,10 +13,10 @@ Each rule is validated against the base tables before it may be applied, and adm
 if every row satisfying its `requires` also satisfies its `implies`. Since that check
 concerns the data and not a query, an admitted rule transfers across the workload.
 
-The code keeps the two halves apart, as the thesis does: *mining* sound rules, and
+The code keeps the two halves apart, as the paper does: *mining* sound rules, and
 *selecting* which applicable rules to inject (a performance question only).
 
-> The thesis carries the rationale for these design decisions; this README and the code
+> The paper carries the rationale for these design decisions; this README and the code
 > comments only say what things are, not why.
 
 ## Repository layout
@@ -56,7 +55,7 @@ The code keeps the two halves apart, as the thesis does: *mining* sound rules, a
 ```
 
 > This repository contains **only the productive code**: the pipeline, the prompt folder and
-> the config of every experiment reported in the thesis. The thesis document, the query
+> the config of every experiment reported in the paper. The paper document, the query
 > workloads, the databases and the LLM cache are maintained separately and are not part of
 > this code submission.
 
@@ -181,7 +180,7 @@ Each experiment is one YAML file in `systematic_eval/config/`. **The file name i
 experiment's identity** — it selects `transfer_data/<name>/` and `saved_results/<name>/`; the
 config carries no name field of its own.
 
-The 27 shipped configs are exactly the runs the thesis reports:
+The 27 shipped configs are exactly the runs the paper reports:
 
 - eight `experiment_T_imdb_job_12_*` runs, one per experimental condition — the three engines
   with the plan free, DuckDB and Postgres with the plan pinned, the learned ranking signal on
@@ -207,7 +206,7 @@ Two points worth knowing before reading a result:
   engine's estimate or the learned cost model picked (deployable, can regress), `both` = the
   two side by side from a single run.
 - `statistics.show_stats` and `statistics.runtime_aggregator` are inert for every run reported
-  in the thesis. Under `mode: oracle`/`both` or `cost_estimation: true` the runtimes come from
+  in the paper. Under `mode: oracle`/`both` or `cost_estimation: true` the runtimes come from
   `per_subset_results`, which stores the execution stage's median and no per-attempt list, so
   no spread columns are written. `execution.attempts` is likewise collapsed by the execution
   stage itself, always to the median.
@@ -264,7 +263,7 @@ workloads, the DuckDB files and a git bundle of this repository. Created with
 Two pieces of tooling sit outside the four stages and run after them:
 
 - `scripts/thesis_numbers.py`, `scripts/thesis_figures.py` — the reporting layer: every
-  number and figure of the thesis's evaluation chapter, emitted from the saved run artifacts
+  number and figure of the paper's evaluation chapter, emitted from the saved run artifacts
   under a named label. The remaining files in `scripts/` are one-off helpers (demos, debug
   tools, data probes), **not** part of the pipeline; all resolve project paths relative to
   `systematic_eval/`.
